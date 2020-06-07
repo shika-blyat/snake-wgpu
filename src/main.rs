@@ -1,10 +1,10 @@
+mod drawable;
 mod frame;
+mod game;
 mod renderer;
-mod shapes;
 mod vertex;
 
 use futures::executor::block_on;
-use wgpu::*;
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -12,24 +12,12 @@ use winit::{
     window::WindowBuilder,
 };
 
+use drawable::{
+    drawable::Drawable,
+    snake::{Orientation, Snake},
+};
+use game::Game;
 use renderer::Renderer;
-use shapes::{drawable::Drawable, rectangle::Rectangle, triangle::Triangle};
-use vertex::Vertex;
-
-const VERTICES: [Vertex; 3] = [
-    Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
-    },
-];
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -39,10 +27,8 @@ fn main() {
         .build(&event_loop)
         .unwrap();
     let mut renderer = block_on(Renderer::new(&window));
-    let mut rectangle = Rectangle::new(
-        [(0.5, 0.5), (-0.5, 0.5), (-0.5, -0.5), (0.5, -0.5)],
-        [0.5, 0.5, 0.5],
-    );
+    let mut game = Game::new();
+
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             ref event,
@@ -52,9 +38,16 @@ fn main() {
             WindowEvent::KeyboardInput { input, .. } => match input {
                 KeyboardInput {
                     state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                    virtual_keycode: Some(key_code),
                     ..
-                } => *control_flow = ControlFlow::Exit,
+                } => match key_code {
+                    VirtualKeyCode::Escape => *control_flow = ControlFlow::Exit,
+                    VirtualKeyCode::Up => game.snake_go_to(Orientation::Top),
+                    VirtualKeyCode::Right => game.snake_go_to(Orientation::Right),
+                    VirtualKeyCode::Left => game.snake_go_to(Orientation::Left),
+                    VirtualKeyCode::Down => game.snake_go_to(Orientation::Bot),
+                    _ => (),
+                },
                 _ => {}
             },
             WindowEvent::Resized(physical_size) => {
@@ -66,8 +59,9 @@ fn main() {
             _ => {}
         },
         Event::RedrawRequested(_) => {
+            game.update();
             let mut frame = renderer.next_frame();
-            rectangle.draw(&mut frame);
+            game.draw(&mut frame);
             block_on(frame.render());
         }
         Event::MainEventsCleared => {

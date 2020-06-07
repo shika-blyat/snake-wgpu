@@ -108,7 +108,6 @@ impl Renderer {
                 bind_group_layouts: &[],
             });
         let num_vertices = VERTICES.len() as u32;
-        //FIXME j'ai fais du caca
         let vertex_buffer = device
             .create_buffer_with_data(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -172,6 +171,7 @@ impl Renderer {
             .expect("Timeout getting texture");
         Frame::new(self, frame)
     }
+    #[allow(unused)]
     pub fn default_next_frame(&mut self) {
         let frame = self
             .swap_chain

@@ -38,16 +38,10 @@ impl<'a> Frame<'a> {
             }],
             depth_stencil_attachment: None,
         });
-        let buffer = self.renderer.vertex_buffer.map_write(
-            0,
-            (self.vertices.len() * std::mem::size_of::<Vertex>()) as u64,
+        self.renderer.vertex_buffer = self.renderer.device.create_buffer_with_data(
+            bytemuck::cast_slice(&self.vertices),
+            wgpu::BufferUsage::VERTEX,
         );
-        self.renderer.device.poll(Maintain::Wait);
-        let mut buffer = buffer.await.expect("Failed to write in the vertex buffer");
-        buffer
-            .as_slice()
-            .copy_from_slice(bytemuck::cast_slice(&self.vertices));
-
         render_pass.set_pipeline(&self.renderer.render_pipeline);
         render_pass.set_vertex_buffer(0, &self.renderer.vertex_buffer, 0, 0);
         render_pass.draw(0..self.vertices.len() as u32, 0..1);
